@@ -119,6 +119,7 @@ def negSamplingLossAndGradient(
     p_outside = sigmoid(outsideVectors[outsideWordIdx].dot(centerWordVec))
     p_neg = sigmoid(- outsideVectors[negSampleWordIndices].dot(centerWordVec))
 
+    # see a2_written.pdf
     loss = -np.log(p_outside) - np.sum(np.log(p_neg))
     gradCenterVec = (p_outside - 1) * outsideVectors[outsideWordIdx] + np.sum(
         (1 - p_neg)[:, np.newaxis] * outsideVectors[negSampleWordIndices], axis=0)
