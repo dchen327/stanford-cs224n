@@ -2,3 +2,5 @@
 .ipynb_checkpoints
 *.pickle
 *.npy
+*.py[cod]
+__pycache__/
