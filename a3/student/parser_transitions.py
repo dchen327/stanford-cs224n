@@ -69,7 +69,7 @@ class PartialParse(object):
 
         @param transitions (list of str): The list of transitions in the order they should be applied
 
-        @return dsependencies (list of string tuples): The list of dependencies produced when
+        @return dependencies (list of string tuples): The list of dependencies produced when
                                                         parsing the sentence. Represented as a list of
                                                         tuples where each tuple is of the form (head, dependent).
         """
@@ -112,6 +112,17 @@ def minibatch_parse(sentences, model, batch_size):
     # to remove objects from the `unfinished_parses` list. This will free the underlying memory that
     # is being accessed by `partial_parses` and may cause your code to crash.
 
+    partial_parses = [PartialParse(sentence) for sentence in sentences]
+    unfinished_parses = partial_parses[:]
+    while unfinished_parses:
+        minibatch = unfinished_parses[:batch_size]
+        transitions = model.predict(minibatch)
+        for i, partial_parse in enumerate(minibatch):
+            partial_parse.parse_step(transitions[i])
+            if partial_parse.buffer == [] and len(partial_parse.stack) == 1:
+                unfinished_parses.remove(partial_parse)
+    dependencies = [
+        partial_parse.dependencies for partial_parse in partial_parses]
     # END YOUR CODE
 
     return dependencies
@@ -186,7 +197,7 @@ class DummyModel(object):
         """First shifts everything onto the stack and then does exclusively right arcs if the first word of
         the sentence is "right", "left" if otherwise.
         """
-        return [("RA" if pp.stack[1] is "right" else "LA") if len(pp.buffer) == 0 else "S"
+        return [("RA" if pp.stack[1] == "right" else "LA") if len(pp.buffer) == 0 else "S"
                 for pp in partial_parses]
 
     def interleave_predict(self, partial_parses):
