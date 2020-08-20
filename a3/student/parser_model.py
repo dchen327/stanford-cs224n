@@ -117,7 +117,7 @@ class ParserModel(nn.Module):
         # View: https://pytorch.org/docs/stable/tensors.html#torch.Tensor.view
 
         x = torch.index_select(self.embeddings, 0,  w.view(-1))
-        print(x.shape)
+        x = x.view(w.size()[0], -1)
 
         # END YOUR CODE
         return x
