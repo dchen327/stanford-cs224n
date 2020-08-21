@@ -1,0 +1,120 @@
+\documentclass{article}
+\usepackage{inputenc,enumitem,amsmath,geometry}
+\geometry{legalpaper, portrait, margin=1in}
+
+
+\title{Stanford CS224n HW A3}
+\author{David Chen}
+\date{August 2020}
+
+\begin{document}
+
+\maketitle
+
+\section*{Written Questions}
+\subsection*{1. Machine Learning \& Neural Networks}
+\begin{enumerate}[label=(\alph*)]
+    \item 
+    \begin{enumerate}[label=\roman*.]
+        \item If most of the SGD updates are heading in one direction, and one noisy update is in the opposite direction, vanilla SGD will have some zigzags. However, in momentum, a noisy update in the wrong direction will only act to slow down the movement in the overall correct direction, reducing the variance and oscillation from each individual update. This low variance means that SGD+Momentum more frequently takes steps in the correct direction, and additionally the momentum can help prevent SGD from getting stuck in saddle points.
+        
+        \item By dividing the update by the square root of the gradient magnitude rolling average, Adam effectively assigns lower learning rates to weights with high gradients (or frequent updates), and higher learning rates to weights with low gradients (or infrequent updates). Since learning rates are adapted to the parameters, the updates become more robust. Larger updates for small gradients can also help with escaping from places with low gradients.
+    \end{enumerate}
+    
+    \item 
+    \begin{enumerate}[label=\roman*.]
+        \item $\gamma$ must be equal to $p_\text{drop}$, because we want the expected output of each layer to be the same. We don't want to set some layers to 0, and then pass a significantly smaller output to the next layer, since this would mess up at test time when we turn off dropout.
+        
+        \item Dropout during training helps prevent overfitting, since it prevents the network from memorizing training examples, and rather forces different parts of the network to learn the same things. During evaluation, however, we want to make use of everything the model has learned, so we use all the learned neurons.
+    \end{enumerate}
+\end{enumerate}
+\subsection*{2. Neural Transition-Based Dependency Parsing}
+\begin{enumerate}[label=(\alph*)]
+\item
+\begin{tabular}{l|l|l|l}
+    Stack & Buffer & New dependency & Transition \\
+    \hline
+    \text{[ROOT]} & \text{[I, parsed, this, sentence, correctly]} & & Initial Config
+    \\
+    \text{[ROOT, I]} & \text{[parsed, this sentence, correctly]} & & SHIFT \\
+    \text{[ROOT, I, parsed]} & \text{[this, sentence, correctly]} & & SHIFT
+    \\
+    \text{[ROOT, parsed]} & \text{[this, sentence, correctly]} & parsed $\rightarrow$ I & LEFT-ARC
+    \\
+    \text{[ROOT, parsed, this]} & \text{[sentence, correctly]} & & SHIFT
+    \\
+    \text{[ROOT, parsed, this, sentence]} & \text{[correctly]} & & SHIFT
+    \\
+    \text{[ROOT, parsed, sentence]} & \text{[correctly]} & sentence $\rightarrow$ this & LEFT-ARC
+    \\
+    \text{[ROOT, parsed]} & \text{[correctly]} & parsed $\rightarrow$ sentence & RIGHT-ARC
+    \\
+    \text{[ROOT, parsed, correctly]} & \text{[]} & & SHIFT
+    \\
+    \text{[ROOT, parsed]} & \text{[]} & parsed $\rightarrow$ correctly & RIGHT-ARC
+    \\
+    \text{[ROOT]} & \text{[]} & ROOT $\rightarrow$ parsed & RIGHT-ARC
+\end{tabular}
+\item A sentence containing n words will be parsed in 2n steps, since each word will be shifted onto the stack from the buffer and then mapped to a dependency.
+
+\item[(e)]
+\textbf{Default Parameters:}
+\begin{verbatim}
+batch_size=1024, n_epochs=10, lr=0.0005)
+
+Epoch 10 out of 10
+Average Train Loss: 0.01810444533337085
+Evaluating on dev set
+- dev UAS: 87.89
+================================================================================
+TESTING
+================================================================================
+Restoring the best model weights found on the dev set
+Final evaluation on test set
+- test UAS: 88.78
+Done!
+\end{verbatim}
+\textbf{Custom Parameters (slight hyperparameter tuning):}
+\begin{verbatim}
+batch_size=512, n_epochs=10, lr=0.0005
+
+Epoch 10 out of 10
+Average Train Loss: 0.014971269847214367
+Evaluating on dev set
+- dev UAS: 87.83
+================================================================================
+TESTING
+================================================================================
+Restoring the best model weights found on the dev set
+Final evaluation on test set
+- test UAS: 89.09
+Done!
+\end{verbatim}
+
+\item[(f)]
+\begin{enumerate}[label=\roman*.]
+    \item Verb Phrase Attachment Error:
+    \\
+    Incorrect dependency: wedding $\rightarrow$ fearing
+    \\
+    Correct dependency: heading $\rightarrow$ fearing
+    \item Coordination Attachment Error:
+    \\
+    Incorrect dependency: makes $\rightarrow$ rescue
+    \\
+    Correct dependency: rush $\rightarrow$ rescue
+    \item Prepositional Phrase Attachment Error:
+    \\
+    Incorrect dependency: named $\rightarrow$ midland
+    \\
+    Correct dependency: guy $\rightarrow$ midland
+    \item Modifier Attachment Error:
+    \\
+    Incorrect dependency: elements $\rightarrow$ most
+    \\
+    Correct dependency: crucial $\rightarrow$ most
+\end{enumerate}
+
+\end{enumerate}
+
+\end{document}
