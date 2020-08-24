@@ -143,7 +143,7 @@ class NMT(nn.Module):
             Additionally, take the final states of the encoder and project them to obtain initial states for decoder.
 
         @param source_padded (Tensor): Tensor of padded source sentences with shape (src_len, b), where
-                                        b = batch_size, src_len = maximum source sentence length. Note that 
+                                        b = batch_size, src_len = maximum source sentence length. Note that
                                        these have already been sorted in order of longest to shortest sentence.
         @param source_lengths (List[int]): List of actual lengths for each of the source sentences in the batch
         @returns enc_hiddens (Tensor): Tensor of hidden units with shape (b, src_len, h*2), where
@@ -214,7 +214,7 @@ class NMT(nn.Module):
                                      b = batch size, src_len = maximum source sentence length.
         @param dec_init_state (tuple(Tensor, Tensor)): Initial state and cell for decoder
         @param target_padded (Tensor): Gold-standard padded target sentences (tgt_len, b), where
-                                       tgt_len = maximum target sentence length, b = batch size. 
+                                       tgt_len = maximum target sentence length, b = batch size.
 
         @returns combined_outputs (Tensor): combined output tensor  (tgt_len, b,  h), where
                                         tgt_len = maximum target sentence length, b = batch_size,  h = hidden size
@@ -299,7 +299,7 @@ class NMT(nn.Module):
         @param enc_hiddens_proj (Tensor): Encoder hidden states Tensor, projected from (h * 2) to h. Tensor is with shape (b, src_len, h),
                                     where b = batch size, src_len = maximum source length, h = hidden size.
         @param enc_masks (Tensor): Tensor of sentence masks shape (b, src_len),
-                                    where b = batch size, src_len is maximum source length. 
+                                    where b = batch size, src_len is maximum source length.
 
         @returns dec_state (tuple (Tensor, Tensor)): Tuple of tensors both shape (b, h), where b = batch size, h = hidden size.
                 First tensor is decoder's new hidden state, second tensor is decoder's new cell.
@@ -335,6 +335,12 @@ class NMT(nn.Module):
         # Tensor Squeeze:
         # https://pytorch.org/docs/stable/torch.html#torch.squeeze
 
+        dec_state = self.decoder(Ybar_t, dec_state)
+        dec_hidden, dec_cell = dec_state
+        # (b, src_len, h) bmm (b, h, 1) -> (b, src_len, 1)
+        e_t = torch.bmm(enc_hiddens_proj, torch.unsqueeze(dec_hidden, 2))
+        e_t = torch.squeeze(e_t, 2)  # (b, src_len, 1) -> (b, src_len)
+
         # END YOUR CODE
 
         # Set e_t to -inf where enc_masks has 1
@@ -346,7 +352,7 @@ class NMT(nn.Module):
         # 1. Apply softmax to e_t to yield alpha_t
         # 2. Use batched matrix multiplication between alpha_t and enc_hiddens to obtain the
         # attention output vector, a_t.
-        ###           - alpha_t is shape (b, src_len)
+        # - alpha_t is shape (b, src_len)
         # - enc_hiddens is shape (b, src_len, 2h)
         # - a_t should be shape (b, 2h)
         # - You will need to do some squeezing and unsqueezing.
@@ -367,6 +373,14 @@ class NMT(nn.Module):
         # https://pytorch.org/docs/stable/torch.html#torch.cat
         # Tanh:
         # https://pytorch.org/docs/stable/torch.html#torch.tanh
+
+        alpha_t = F.softmax(e_t, dim=1)
+        # (b, 1, src_len) x (b, src_len, 2h) -> (b, 1, 2h)
+        a_t = torch.bmm(torch.unsqueeze(alpha_t, 1), enc_hiddens)
+        a_t = torch.squeeze(a_t, 1)  # (b, 2h)
+        U_t = torch.cat((dec_hidden, a_t), dim=1)
+        V_t = self.combined_output_projection(U_t)
+        O_t = self.dropout(torch.tanh(V_t))
 
         # END YOUR CODE
 
