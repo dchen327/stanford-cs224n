@@ -185,6 +185,21 @@ class NMT(nn.Module):
         # Tensor Permute:
         # https://pytorch.org/docs/stable/tensors.html#torch.Tensor.permute
 
+        X = self.model_embeddings.source(source_padded)
+
+        X = pack_padded_sequence(X, torch.Tensor(source_lengths))
+        enc_hiddens, (last_hidden, last_cell) = self.encoder(X)
+        #  pad_packed_sequence returns a tuple, ignore second return val (lengths)
+        enc_hiddens = pad_packed_sequence(enc_hiddens)[0].permute(1, 0, 2)
+
+        concat_last_hidden = torch.cat((last_hidden[0], last_hidden[1]), dim=1)
+        init_decoder_hidden = self.h_projection(concat_last_hidden)
+
+        concat_last_cell = torch.cat((last_cell[0], last_cell[1]), dim=1)
+        init_decoder_cell = self.c_projection(concat_last_cell)
+
+        dec_init_state = (init_decoder_hidden, init_decoder_cell)
+
         # END YOUR CODE
 
         return enc_hiddens, dec_init_state
