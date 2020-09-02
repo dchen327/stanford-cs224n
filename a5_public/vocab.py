@@ -47,7 +47,7 @@ class VocabEntry(object):
         self.unk_id = self.word2id['<unk>']
         self.id2word = {v: k for k, v in self.word2id.items()}
 
-        ## Additions to the A4 code:
+        # Additions to the A4 code:
         self.char_list = list(
             """ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/\\|_@#$%^&*~`+-=<>()[]""")
 
@@ -64,8 +64,9 @@ class VocabEntry(object):
         self.end_of_word = self.char2id["}"]
         assert self.start_of_word + 1 == self.end_of_word
 
-        self.id2char = {v: k for k, v in self.char2id.items()}  # Converts integers to characters
-        ## End additions to the A4 code
+        # Converts integers to characters
+        self.id2char = {v: k for k, v in self.char2id.items()}
+        # End additions to the A4 code
 
     def __getitem__(self, word):
         """ Retrieve word's index. Return the index for the unk
@@ -148,20 +149,24 @@ class VocabEntry(object):
 
         @returns sents_var: tensor of (max_sentence_length, batch_size, max_word_length)
         """
-        ### YOUR CODE HERE for part 1e
-        ### TODO:
-        ###     - Use `words2charindices()` from this file, which converts each character to its corresponding index in the
-        ###       character-vocabulary.
-        ###     - Use `pad_sents_char()` from utils.py, which pads all words to max_word_length of all words in the batch,
-        ###       and pads all sentences to max length of all sentences in the batch. Read __init__ to see how to get
-        ###       index of character-padding token
-        ###     - Connect these two parts to convert the resulting padded sentences to a torch tensor.
-        ### HINT:
-        ###     - You may find .contiguous() useful after reshaping. Check the following links for more details:
-        ###         https://pytorch.org/docs/stable/tensors.html#torch.Tensor.contiguous
-        ###         https://pytorch.org/docs/stable/tensors.html#torch.Tensor.view
+        # YOUR CODE HERE for part 1e
+        # TODO:
+        # - Use `words2charindices()` from this file, which converts each character to its corresponding index in the
+        # character-vocabulary.
+        # - Use `pad_sents_char()` from utils.py, which pads all words to max_word_length of all words in the batch,
+        # and pads all sentences to max length of all sentences in the batch. Read __init__ to see how to get
+        # index of character-padding token
+        # - Connect these two parts to convert the resulting padded sentences to a torch tensor.
+        # HINT:
+        # - You may find .contiguous() useful after reshaping. Check the following links for more details:
+        # https://pytorch.org/docs/stable/tensors.html#torch.Tensor.contiguous
+        # https://pytorch.org/docs/stable/tensors.html#torch.Tensor.view
 
-        ### END YOUR CODE
+        char_indices = self.words2charindices(sents)
+        sents_padded = pad_sents_char(char_indices, self.char_pad)
+        print(sents_padded)
+
+        # END YOUR CODE
 
     def to_input_tensor(self, sents: List[List[str]], device: torch.device) -> torch.Tensor:
         """ Convert list of sentences (words) into tensor with necessary padding for 
@@ -190,7 +195,8 @@ class VocabEntry(object):
         valid_words = [w for w, v in word_freq.items() if v >= freq_cutoff]
         print('number of word types: {}, number of word types w/ frequency >= {}: {}'
               .format(len(word_freq), freq_cutoff, len(valid_words)))
-        top_k_words = sorted(valid_words, key=lambda w: word_freq[w], reverse=True)[:size]
+        top_k_words = sorted(
+            valid_words, key=lambda w: word_freq[w], reverse=True)[:size]
         for word in top_k_words:
             vocab_entry.add(word)
         return vocab_entry
@@ -230,7 +236,8 @@ class Vocab(object):
         """ Save Vocab to file as JSON dump.
         @param file_path (str): file path to vocab file
         """
-        json.dump(dict(src_word2id=self.src.word2id, tgt_word2id=self.tgt.word2id), open(file_path, 'w'), indent=2)
+        json.dump(dict(src_word2id=self.src.word2id,
+                       tgt_word2id=self.tgt.word2id), open(file_path, 'w'), indent=2)
 
     @staticmethod
     def load(file_path):
@@ -260,8 +267,10 @@ if __name__ == '__main__':
     src_sents = read_corpus(args['--train-src'], source='src')
     tgt_sents = read_corpus(args['--train-tgt'], source='tgt')
 
-    vocab = Vocab.build(src_sents, tgt_sents, int(args['--size']), int(args['--freq-cutoff']))
-    print('generated vocabulary, source %d words, target %d words' % (len(vocab.src), len(vocab.tgt)))
+    vocab = Vocab.build(src_sents, tgt_sents, int(
+        args['--size']), int(args['--freq-cutoff']))
+    print('generated vocabulary, source %d words, target %d words' %
+          (len(vocab.src), len(vocab.tgt)))
 
     vocab.save(args['VOCAB_FILE'])
     print('vocabulary saved to %s' % args['VOCAB_FILE'])
